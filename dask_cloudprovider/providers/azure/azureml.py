@@ -1,10 +1,6 @@
 from azureml.core import Experiment, RunConfiguration, ScriptRunConfig
-<<<<<<< HEAD
-from azureml.core.compute import AmlCompute
-=======
 from azureml.core.compute import AmlCompute, ComputeTarget
 from azureml.core.compute_target import ComputeTargetException
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 from azureml.train.estimator import Estimator
 from azureml.core.runconfig import MpiConfiguration
 
@@ -15,20 +11,10 @@ import threading
 from contextlib import suppress
 
 import dask
-<<<<<<< HEAD
-from distributed.deploy.cluster import Cluster
-from distributed.core import rpc
-from distributed.utils import (
-    LoopRunner,
-    log_errors,
-    format_bytes,
-)
-=======
 from contextlib import suppress
 from distributed.deploy.cluster import Cluster
 from distributed.core import rpc
 from distributed.utils import LoopRunner, log_errors, format_bytes
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 from tornado.ioloop import PeriodicCallback
 
 logger = logging.getLogger(__name__)
@@ -42,15 +28,6 @@ class AzureMLCluster(Cluster):
     Parameters
     ----------
     workspace: azureml.core.Workspace (required)
-<<<<<<< HEAD
-        Azure ML Workspace - see https://aka.ms/azureml/workspace
-
-    compute_target: azureml.core.ComputeTarget (required)
-        Azure ML Compute Target - see https://aka.ms/azureml/computetarget
-
-    environment_definition: azureml.core.Environment (required)
-        Azure ML Environment - see https://aka.ms/azureml/environments
-=======
         Azure ML Workspace - see https://aka.ms/azureml/workspace.
 
     vm_size: str (optional)
@@ -72,7 +49,6 @@ class AzureMLCluster(Cluster):
         Number of idle seconds leading to scheduler shut down.
 
         Defaults to ``1200`` (20 minutes).
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 
     experiment_name: str (optional)
         The name of the Azure ML Experiment used to control the cluster.
@@ -104,14 +80,6 @@ class AzureMLCluster(Cluster):
 
         Defaults to ``9002``.
 
-<<<<<<< HEAD
-    scheduler_idle_timeout: int (optional)
-        Number of idle seconds leading to scheduler shut down.
-
-        Defaults to ``1200`` (20 minutes).
-
-=======
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
     worker_death_timeout: int (optional)
         Number of seconds to wait for a worker to respond before removing it.
 
@@ -124,12 +92,9 @@ class AzureMLCluster(Cluster):
 
         Defaults to ``[]``.
 
-<<<<<<< HEAD
-=======
     compute_target: azureml.core.ComputeTarget (optional)
         Azure ML Compute Target - see https://aka.ms/azureml/computetarget.
 
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
     admin_username: str (optional)
         Username of the admin account for the AzureML Compute.
         Required for runs that are not on the same VNET. Defaults to empty string.
@@ -146,14 +111,6 @@ class AzureMLCluster(Cluster):
 
         Defaults to ``""``.
 
-<<<<<<< HEAD
-    datastores: List[str] (optional)
-        List of Azure ML Datastores to be mounted on the headnode -
-        see https://aka.ms/azureml/data and https://aka.ms/azureml/datastores.
-
-        Defaults to ``[]``. To mount all datastores in the workspace,
-        set to ``[ws.datastores[datastore] for datastore in ws.datastores]``.
-=======
     vnet: str (optional)
         Name of the virtual network.
 
@@ -165,7 +122,6 @@ class AzureMLCluster(Cluster):
         is located. If not passed, but names for ``vnet`` and ``subnet`` are
         passed, ``vnet_resource_group`` is assigned with the name of resource
         group associted with ``workspace``
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 
     telemetry_opt_out: bool (optional)
         A boolean parameter. Defaults to logging a version of AzureMLCluster
@@ -184,13 +140,8 @@ class AzureMLCluster(Cluster):
     def __init__(
         self,
         workspace,
-<<<<<<< HEAD
-        compute_target,
-        environment_definition,
-=======
         compute_target=None,
         environment_definition=None,
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
         experiment_name=None,
         initial_node_count=None,
         jupyter=None,
@@ -204,13 +155,10 @@ class AzureMLCluster(Cluster):
         admin_ssh_key=None,
         datastores=None,
         code_store=None,
-<<<<<<< HEAD
-=======
         vnet_resource_group=None,
         vnet=None,
         subnet=None,
         show_output=False,
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
         telemetry_opt_out=None,
         asynchronous=False,
         **kwargs,
@@ -218,11 +166,8 @@ class AzureMLCluster(Cluster):
         ### REQUIRED PARAMETERS
         self.workspace = workspace
         self.compute_target = compute_target
-<<<<<<< HEAD
-=======
 
         ### ENVIRONMENT
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
         self.environment_definition = environment_definition
 
         ### EXPERIMENT DEFINITION
@@ -236,8 +181,6 @@ class AzureMLCluster(Cluster):
         self.telemetry_opt_out = telemetry_opt_out
         self.telemetry_set = False
 
-<<<<<<< HEAD
-=======
         ### FUTURE EXTENSIONS
         self.kwargs = kwargs
         self.show_output = show_output
@@ -259,7 +202,6 @@ class AzureMLCluster(Cluster):
                 logger.exception(e)
                 return
 
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
         ### GPU RUN INFO
         self.workspace_vm_sizes = AmlCompute.supported_vmsizes(self.workspace)
         self.workspace_vm_sizes = [
@@ -272,8 +214,6 @@ class AzureMLCluster(Cluster):
         ]["vmSize"].lower()
         self.n_gpus_per_node = self.workspace_vm_sizes[self.compute_target_vm_size]
         self.use_gpu = True if self.n_gpus_per_node > 0 else False
-<<<<<<< HEAD
-=======
         if self.environment_definition is None:
             if self.use_gpu:
                 self.environment_definition = self.workspace.environments[
@@ -283,7 +223,6 @@ class AzureMLCluster(Cluster):
                 self.environment_definition = self.workspace.environments[
                     "AzureML-Dask-CPU"
                 ]
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 
         ### JUPYTER AND PORT FORWARDING
         self.jupyter = jupyter
@@ -327,23 +266,13 @@ class AzureMLCluster(Cluster):
 
                 if not all_correct:
                     error_message = (
-<<<<<<< HEAD
-                        f"At least one of the elements of the additional_ports parameter"
-=======
                         "At least one of the elements of the additional_ports parameter"
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
                         " is wrong. Make sure it is a list of int tuples."
                         " Check the documentation."
                     )
                     raise TypeError(error_message)
 
         self.additional_ports = additional_ports
-<<<<<<< HEAD
-
-        self.admin_username = admin_username
-        self.admin_ssh_key = admin_ssh_key
-=======
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
         self.scheduler_ip_port = (
             None  ### INIT FOR HOLDING THE ADDRESS FOR THE SCHEDULER
         )
@@ -351,17 +280,9 @@ class AzureMLCluster(Cluster):
         ### DATASTORES
         self.datastores = datastores
 
-<<<<<<< HEAD
-        ### FUTURE EXTENSIONS
-        self.kwargs = kwargs
-
-        ### RUNNING IN MATRIX OR LOCAL
-        self.same_vnet = None
-=======
         ### RUNNING IN MATRIX OR LOCAL
         self.same_vnet = None
         self.is_in_ci = False
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 
         ### GET RUNNING LOOP
         self._loop_runner = LoopRunner(loop=None, asynchronous=asynchronous)
@@ -463,12 +384,8 @@ class AzureMLCluster(Cluster):
 
     def __print_message(self, msg, length=80, filler="#", pre_post=""):
         logger.info(msg)
-<<<<<<< HEAD
-        print(f"{pre_post} {msg} {pre_post}".center(length, filler))
-=======
         if self.show_output:
             print(f"{pre_post} {msg} {pre_post}".center(length, filler))
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 
     async def __check_if_scheduler_ip_reachable(self):
         """
@@ -477,34 +394,6 @@ class AzureMLCluster(Cluster):
         """
         try:
             ip, port = self.scheduler_ip_port.split(":")
-<<<<<<< HEAD
-            socket.create_connection((ip, port), 10)
-            self.same_vnet = True
-            self.__print_message("On the same VNET")
-            logger.info("On the same VNET")
-        except socket.timeout as e:
-
-            self.__print_message("Not on the same VNET")
-            logger.info("On the same VNET")
-            self.same_vnet = False
-        except ConnectionRefusedError as e:
-            logger.info(e)
-            pass
-
-    def __prepare_rpc_connection_to_headnode(self):
-        if not self.same_vnet:
-            if self.admin_username == "" or self.admin_ssh_key == "":
-                message = "Your machine is not at the same VNET as the cluster. "
-                message += "You need to set admin_username and admin_ssh_key. Check documentation."
-                logger.exception(message)
-                raise Exception(message)
-            else:
-                uri = f"localhost:{self.scheduler_port}"
-                logger.info(f"Local connection: {uri}")
-                return uri
-        else:
-            return self.run.get_metrics()["scheduler"]
-=======
             socket.create_connection((ip, port), 20)
             self.same_vnet = True
             self.__print_message("On the same VNET")
@@ -562,6 +451,8 @@ class AzureMLCluster(Cluster):
 
         with open(pub_key_file, "r") as f:
             pubkey = f.read()
+
+        os.chmod(pri_key_file, 0o600)
 
         self.pub_key_file = pub_key_file
         self.pri_key_file = pri_key_file
@@ -631,7 +522,6 @@ class AzureMLCluster(Cluster):
                     self.compute_target.name, e
                 )
             )
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 
     async def __create_cluster(self):
         self.__print_message("Setting up cluster")
@@ -651,29 +541,15 @@ class AzureMLCluster(Cluster):
         run = exp.submit(estimator, tags=self.tags)
 
         self.__print_message("Waiting for scheduler node's IP")
-<<<<<<< HEAD
-        while (
-            run.get_status() != "Canceled"
-            and run.get_status() != "Failed"
-=======
         status = run.get_status()
         while (
             status != "Canceled"
             and status != "Failed"
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
             and "scheduler" not in run.get_metrics()
         ):
             print(".", end="")
             logger.info("Scheduler not ready")
             time.sleep(5)
-<<<<<<< HEAD
-
-        if run.get_status() == "Canceled" or run.get_status() == "Failed":
-            logger.exception("Failed to start the AzureML cluster")
-            raise Exception("Failed to start the AzureML cluster.")
-
-        print("\n\n")
-=======
             status = run.get_status()
 
         if status == "Canceled" or status == "Failed":
@@ -687,7 +563,6 @@ class AzureMLCluster(Cluster):
             raise Exception(error_message)
 
         print("\n")
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 
         ### SET FLAGS
         self.scheduler_ip_port = run.get_metrics()["scheduler"]
@@ -695,16 +570,6 @@ class AzureMLCluster(Cluster):
         self.__print_message(f'Scheduler: {run.get_metrics()["scheduler"]}')
         self.run = run
 
-<<<<<<< HEAD
-        logger.info(f'Scheduler: {run.get_metrics()["scheduler"]}')
-
-        ### CHECK IF ON THE SAME VNET
-        while self.same_vnet is None:
-            await self.sync(self.__check_if_scheduler_ip_reachable)
-            time.sleep(1)
-
-        ### REQUIRED BY dask.distributed.deploy.cluster.Cluster
-=======
         ### CHECK IF ON THE SAME VNET
         max_retry = 5
         while self.same_vnet is None and max_retry > 0:
@@ -729,7 +594,6 @@ class AzureMLCluster(Cluster):
             f"/mnt/batch/tasks/shared/LS_root/mounts/clusters/{self.hostname}"
             in os.getcwd()
         )
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
         _scheduler = self.__prepare_rpc_connection_to_headnode()
         self.scheduler_comm = rpc(_scheduler)
         await self.sync(self.__setup_port_forwarding)
@@ -743,38 +607,21 @@ class AzureMLCluster(Cluster):
             self.scale(
                 self.initial_node_count
             )  # LOGIC TO KEEP PROPER TRACK OF WORKERS IN `scale`
-<<<<<<< HEAD
-        self.__print_message(f"Scaling is done")
-=======
         self.__print_message("Scaling is done")
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 
     async def __update_links(self):
         token = self.run.get_metrics()["token"]
 
-<<<<<<< HEAD
-        if self.same_vnet:
-            hostname = socket.gethostname()
-=======
         if self.same_vnet or self.is_in_ci:
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
             location = self.workspace.get_details()["location"]
 
             self.scheduler_info[
                 "dashboard_url"
-<<<<<<< HEAD
-            ] = f"https://{hostname}-{self.dashboard_port}.{location}.instances.azureml.net/status"
-
-            self.scheduler_info[
-                "jupyter_url"
-            ] = f"https://{hostname}-{self.jupyter_port}.{location}.instances.azureml.net/lab?token={token}"
-=======
             ] = f"https://{self.hostname}-{self.dashboard_port}.{location}.instances.azureml.net/status"
 
             self.scheduler_info[
                 "jupyter_url"
             ] = f"https://{self.hostname}-{self.jupyter_port}.{location}.instances.azureml.net/lab?token={token}"
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
         else:
             hostname = "localhost"
             self.scheduler_info[
@@ -805,20 +652,12 @@ class AzureMLCluster(Cluster):
         jupyter_address = self.run.get_metrics()["jupyter"]
         scheduler_ip = self.run.get_metrics()["scheduler"].split(":")[0]
 
-<<<<<<< HEAD
-        if self.same_vnet:
-            os.system(
-                f"killall socat"
-            )  # kill all socat processes - cleans up previous port forward setups
-            os.system(
-=======
         self.__print_message("Running in compute instance? {}".format(self.is_in_ci))
         os.system(
             "killall socat"
         )  # kill all socat processes - cleans up previous port forward setups
         if self.same_vnet:
             os.system(
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
                 f"setsid socat tcp-listen:{self.dashboard_port},reuseaddr,fork tcp:{dashboard_address} &"
             )
             os.system(
@@ -838,18 +677,6 @@ class AzureMLCluster(Cluster):
                 "scheduler_public_port: {}".format(scheduler_public_port)
             )
 
-<<<<<<< HEAD
-            cmd = (
-                "ssh -vvv -o StrictHostKeyChecking=no -N"
-                f" -i {os.path.expanduser(self.admin_ssh_key)}"
-                f" -L 0.0.0.0:{self.jupyter_port}:{scheduler_ip}:8888"
-                f" -L 0.0.0.0:{self.dashboard_port}:{scheduler_ip}:8787"
-                f" -L 0.0.0.0:{self.scheduler_port}:{scheduler_ip}:8786"
-            )
-
-            for port in self.additional_ports:
-                cmd += f" -L 0.0.0.0:{port[1]}:{scheduler_ip}:{port[0]}"
-=======
             host_ip = "0.0.0.0"
             if self.is_in_ci:
                 host_ip = socket.gethostbyname(self.hostname)
@@ -864,7 +691,6 @@ class AzureMLCluster(Cluster):
 
             for port in self.additional_ports:
                 cmd += f" -L {host_ip}:{port[1]}:{scheduler_ip}:{port[0]}"
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 
             cmd += f" {self.admin_username}@{scheduler_public_ip} -p {scheduler_public_port}"
 
@@ -993,11 +819,7 @@ class AzureMLCluster(Cluster):
         if self.dashboard_link:
             dashboard_link = (
                 '<p><b>Dashboard: </b><a href="%s" target="_blank">%s</a></p>\n'
-<<<<<<< HEAD
-                % (self.dashboard_link, self.dashboard_link,)
-=======
                 % (self.dashboard_link, self.dashboard_link)
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
             )
         else:
             dashboard_link = ""
@@ -1005,11 +827,7 @@ class AzureMLCluster(Cluster):
         if self.jupyter_link:
             jupyter_link = (
                 '<p><b>Jupyter: </b><a href="%s" target="_blank">%s</a></p>\n'
-<<<<<<< HEAD
-                % (self.jupyter_link, self.jupyter_link,)
-=======
                 % (self.jupyter_link, self.jupyter_link)
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
             )
         else:
             jupyter_link = ""
@@ -1072,18 +890,9 @@ class AzureMLCluster(Cluster):
         return box
 
     def close_when_disconnect(self):
-<<<<<<< HEAD
-        if (
-            self.run.get_status() == "Canceled"
-            or self.run.get_status() == "Completed"
-            or self.run.get_status() == "Failed"
-        ):
-            self.scale_down(len(self.workers_list))
-=======
         status = self.run.get_status()
         if status == "Canceled" or status == "Completed" or status == "Failed":
             self.close()
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
 
     def scale(self, workers=1):
         """ Scale the cluster. Scales to a maximum of the workers available in the cluster.
@@ -1144,10 +953,6 @@ class AzureMLCluster(Cluster):
     async def _close(self):
         if self.status == "closed":
             return
-<<<<<<< HEAD
-=======
-
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
         while self.workers_list:
             child_run = self.workers_list.pop()
             child_run.complete()
@@ -1165,8 +970,6 @@ class AzureMLCluster(Cluster):
             self.portforward_proc.terminate()
             self.end_logging = True
 
-<<<<<<< HEAD
-=======
         ### REMOVE TEMP FILE
         if os.path.isfile(self.pub_key_file):
             os.remove(self.pub_key_file)
@@ -1177,7 +980,6 @@ class AzureMLCluster(Cluster):
             ### REMOVE COMPUTE TARGET
             self.__delete_compute_target()
 
->>>>>>> e44e1fba799dc3b64b81f37bf0d80419ec2104f1
         time.sleep(30)
         await super()._close()
 
