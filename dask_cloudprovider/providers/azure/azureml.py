@@ -123,6 +123,9 @@ class AzureMLCluster(Cluster):
         passed, ``vnet_resource_group`` is assigned with the name of resource
         group associted with ``workspace``
 
+    show_output: bool (optional)
+        Switch to determine quiet versus verbose cluster startup. Defaults to False.
+
     telemetry_opt_out: bool (optional)
         A boolean parameter. Defaults to logging a version of AzureMLCluster
         with Microsoft. Set this flag to False if you do not want to share this
@@ -158,7 +161,7 @@ class AzureMLCluster(Cluster):
         vnet_resource_group=None,
         vnet=None,
         subnet=None,
-        show_output=False,
+        show_output=None,
         telemetry_opt_out=None,
         asynchronous=False,
         **kwargs,
@@ -293,14 +296,17 @@ class AzureMLCluster(Cluster):
         ### INITIALIZE CLUSTER
         super().__init__(asynchronous=asynchronous)
 
-        if not self.asynchronous:
-            self._loop_runner.start()
-            self.sync(self.__get_defaults)
+        ### DEBUG
+        self.__print_message('INSIDE FFS')
 
-            if not self.telemetry_opt_out:
-                self.__append_telemetry()
+        # if not self.asynchronous:
+        #     self._loop_runner.start()
+        #     self.sync(self.__get_defaults)
 
-            self.sync(self.__create_cluster)
+        #     if not self.telemetry_opt_out:
+        #         self.__append_telemetry()
+
+        #     self.sync(self.__create_cluster)
 
     async def __get_defaults(self):
         self.config = dask.config.get("cloudprovider.azure", {})
@@ -343,6 +349,9 @@ class AzureMLCluster(Cluster):
 
         if self.telemetry_opt_out is None:
             self.telemetry_opt_out = self.config.get("telemetry_opt_out")
+        
+        if self.show_output is None:
+            self.show_output = self.config.get("show_output")
 
         ### PARAMETERS TO START THE CLUSTER
         self.scheduler_params = {}
@@ -383,7 +392,7 @@ class AzureMLCluster(Cluster):
                 pass
 
     def __print_message(self, msg, length=80, filler="#", pre_post=""):
-        logger.info(msg)
+        # logger.info(msg)
         if self.show_output:
             print(f"{pre_post} {msg} {pre_post}".center(length, filler))
 
@@ -677,7 +686,8 @@ class AzureMLCluster(Cluster):
                 "scheduler_public_port: {}".format(scheduler_public_port)
             )
 
-            host_ip = "0.0.0.0"
+            # host_ip = "0.0.0.0"
+            host_ip = "127.0.0.1"  ## localhost
             if self.is_in_ci:
                 host_ip = socket.gethostbyname(self.hostname)
 

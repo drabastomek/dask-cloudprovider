@@ -47,3 +47,4 @@ cloudprovider:
     admin_ssh_key: "" # password to log in to the AzureML Training Cluster for 'local' runs
     telemetry_opt_out: False # by default we log the version of the AzureMLCluster being used, set to True to opt-out 
     datastores: [] # default list of datastores to mount
+    show_output: false # default for printint output to screen
