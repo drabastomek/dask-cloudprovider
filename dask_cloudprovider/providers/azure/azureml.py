@@ -180,23 +180,63 @@ class AzureMLCluster(Cluster):
         ### ENVIRONMENT AND VARIABLES
         self.initial_node_count = initial_node_count
 
-        ### SEND TELEMETRY
-        self.telemetry_opt_out = telemetry_opt_out
-        self.telemetry_set = False
+        ### JUPYTER AND PORT FORWARDING
+        self.jupyter = jupyter
+        self.jupyter_port = jupyter_port
+        self.dashboard_port = dashboard_port
+        self.scheduler_port = scheduler_port
+        self.scheduler_idle_timeout = scheduler_idle_timeout
+        self.worker_death_timeout = worker_death_timeout
+        self.portforward_proc = None
+        self.end_logging = False  # FLAG FOR STOPPING THE port_forward_logger THREAD
 
-        ### FUTURE EXTENSIONS
-        self.kwargs = kwargs
-        self.show_output = show_output
+        self.additional_ports = additional_ports if self.__check_additional_ports(additional_ports) else None 
 
-        ## CREATE COMPUTE TARGET
+        ### COMPUTE TARGET
         self.admin_username = admin_username
         self.admin_ssh_key = admin_ssh_key
         self.vnet_resource_group = vnet_resource_group
         self.vnet = vnet
         self.subnet = subnet
+
+        ### SEND TELEMETRY
+        self.telemetry_opt_out = telemetry_opt_out
+        self.telemetry_set = False
+
+        ### DATASTORES
+        self.datastores = datastores
+
+        ### FUTURE EXTENSIONS
+        self.kwargs = kwargs
+        self.show_output = show_output
+
+        ### GET RUNNING LOOP
+        self._loop_runner = LoopRunner(loop=None, asynchronous=asynchronous)
+        self.loop = self._loop_runner.loop
+
+        self.abs_path = pathlib.Path(__file__).parent.absolute()
+
+        ### INITIALIZE CLUSTER
+        super().__init__(asynchronous=asynchronous)
+
+        if not self.asynchronous:
+            self._loop_runner.start()
+            self.sync(self.__get_defaults)
+            self.sync(self.__finalize_setup)
+            self.sync(self.__set_script_parameters)
+            self.sync(self.__set_cluster_parameters)
+
+            if not self.telemetry_opt_out:
+                self.__append_telemetry()
+
+            self.sync(self.__create_cluster)
+
+    async def __finalize_setup(self):
+        ## CREATE COMPUTE TARGET
         self.compute_target_set = True
-        self.pub_key_file = ""
-        self.pri_key_file = ""
+        # self.pub_key_file = ""
+        # self.pri_key_file = ""
+
         if self.compute_target is None:
             try:
                 self.compute_target = self.__create_compute_target()
@@ -227,16 +267,16 @@ class AzureMLCluster(Cluster):
                     "AzureML-Dask-CPU"
                 ]
 
-        ### JUPYTER AND PORT FORWARDING
-        self.jupyter = jupyter
-        self.jupyter_port = jupyter_port
-        self.dashboard_port = dashboard_port
-        self.scheduler_port = scheduler_port
-        self.scheduler_idle_timeout = scheduler_idle_timeout
-        self.portforward_proc = None
-        self.worker_death_timeout = worker_death_timeout
-        self.end_logging = False  # FLAG FOR STOPPING THE port_forward_logger THREAD
+        
+        self.scheduler_ip_port = (
+            None  ### INIT FOR HOLDING THE ADDRESS FOR THE SCHEDULER
+        )
 
+        ### RUNNING IN MATRIX OR LOCAL
+        self.same_vnet = None
+        self.is_in_ci = False
+
+    def __check_additional_ports(self, additional_ports):
         if additional_ports is not None:
             if type(additional_ports) != list:
                 error_message = (
@@ -274,39 +314,8 @@ class AzureMLCluster(Cluster):
                         " Check the documentation."
                     )
                     raise TypeError(error_message)
-
-        self.additional_ports = additional_ports
-        self.scheduler_ip_port = (
-            None  ### INIT FOR HOLDING THE ADDRESS FOR THE SCHEDULER
-        )
-
-        ### DATASTORES
-        self.datastores = datastores
-
-        ### RUNNING IN MATRIX OR LOCAL
-        self.same_vnet = None
-        self.is_in_ci = False
-
-        ### GET RUNNING LOOP
-        self._loop_runner = LoopRunner(loop=None, asynchronous=asynchronous)
-        self.loop = self._loop_runner.loop
-
-        self.abs_path = pathlib.Path(__file__).parent.absolute()
-
-        ### INITIALIZE CLUSTER
-        super().__init__(asynchronous=asynchronous)
-
-        ### DEBUG
-        self.__print_message('INSIDE FFS')
-
-        # if not self.asynchronous:
-        #     self._loop_runner.start()
-        #     self.sync(self.__get_defaults)
-
-        #     if not self.telemetry_opt_out:
-        #         self.__append_telemetry()
-
-        #     self.sync(self.__create_cluster)
+                else:
+                    return all_correct
 
     async def __get_defaults(self):
         self.config = dask.config.get("cloudprovider.azure", {})
@@ -353,6 +362,7 @@ class AzureMLCluster(Cluster):
         if self.show_output is None:
             self.show_output = self.config.get("show_output")
 
+    async def __set_script_parameters(self):
         ### PARAMETERS TO START THE CLUSTER
         self.scheduler_params = {}
         self.worker_params = {}
@@ -368,6 +378,7 @@ class AzureMLCluster(Cluster):
             self.worker_params["--use_gpu"] = True
             self.worker_params["--n_gpus_per_node"] = self.n_gpus_per_node
 
+    async def __set_cluster_parameters(self):
         ### CLUSTER PARAMS
         self.max_nodes = self.compute_target.serialize()["properties"]["properties"][
             "scaleSettings"
@@ -392,7 +403,7 @@ class AzureMLCluster(Cluster):
                 pass
 
     def __print_message(self, msg, length=80, filler="#", pre_post=""):
-        # logger.info(msg)
+        logger.info(msg)
         if self.show_output:
             print(f"{pre_post} {msg} {pre_post}".center(length, filler))
 
@@ -469,6 +480,9 @@ class AzureMLCluster(Cluster):
         return pubkey, pri_key_file
 
     def __create_compute_target(self):
+        ### TODO: make sure self.admin_username gets populated from config 
+        ### TODO: add vm priority switch
+        ### TODO: cleanup and move the default logic to config YAML
         import random
 
         tmp_name = "dask-ct-{}".format(random.randint(100000, 999999))
@@ -481,8 +495,8 @@ class AzureMLCluster(Cluster):
         vnet_name = None
         subnet_name = None
 
-        if self.admin_username is None:
-            self.admin_username = "dask"
+        # if self.admin_username is None:
+        #     self.admin_username = "dask"
         ssh_key_pub, self.admin_ssh_key = self.__get_ssh_keys()
 
         if self.vnet and self.subnet:
@@ -556,7 +570,7 @@ class AzureMLCluster(Cluster):
             and status != "Failed"
             and "scheduler" not in run.get_metrics()
         ):
-            print(".", end="")
+            if self.show_output: print(".", end="")
             logger.info("Scheduler not ready")
             time.sleep(5)
             status = run.get_status()
@@ -687,7 +701,9 @@ class AzureMLCluster(Cluster):
             )
 
             # host_ip = "0.0.0.0"
-            host_ip = "127.0.0.1"  ## localhost
+            # host_ip = "127.0.0.1"  ## localhost
+            host_ip = "localhost"
+            print(host_ip, f'admin: {self.admin_username}')
             if self.is_in_ci:
                 host_ip = socket.gethostbyname(self.hostname)
 
@@ -703,6 +719,8 @@ class AzureMLCluster(Cluster):
                 cmd += f" -L {host_ip}:{port[1]}:{scheduler_ip}:{port[0]}"
 
             cmd += f" {self.admin_username}@{scheduler_public_ip} -p {scheduler_public_port}"
+
+            print(cmd)
 
             self.portforward_proc = subprocess.Popen(
                 cmd.split(),
